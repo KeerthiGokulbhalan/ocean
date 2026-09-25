@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      - POSTGRES_DB=seapath
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ALLOWED_ORIGINS=http://localhost:5173
+      - DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/seapath
+      - AIS_PROVIDER=${AIS_PROVIDER:-mock}
+      - AIS_API_URL=${AIS_API_URL:-wss://stream.aisstream.io/v0/stream}
+      - AIS_API_KEY=${AIS_API_KEY:-}
+      - AISSTREAM_STALE_SECONDS=${AISSTREAM_STALE_SECONDS:-180}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

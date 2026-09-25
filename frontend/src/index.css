@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: #F5F8FA;
+  color: #0E2233;
+}
+
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  border-radius: 0.75rem;
+}
+
+/* Leaflet divIcons ship with a white box and border by default; strip it so
+   our custom SVG ship / port markers render cleanly. */
+.seapath-ship-marker,
+.seapath-port-marker,
+.seapath-endpoint-marker {
+  background: transparent;
+  border: 0;
+}
