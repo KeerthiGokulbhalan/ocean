@@ -74,6 +74,22 @@ def create_voyage(
             )
         )
 
+    # Persist segment-level weather warnings so the alerts bell retains them
+    # after the operator leaves the route-planning screen.
+    for weather_alert in payload.weather_alerts:
+        db.add(
+            Alert(
+                voyage_id=voyage.id,
+                type="WeatherWarning",
+                message=(
+                    f"[{weather_alert.severity.upper()}] {weather_alert.message} "
+                    f"({weather_alert.wave_height_m:.1f} m waves, "
+                    f"{weather_alert.wind_speed_kmh:.0f} km/h wind)."
+                ),
+                status="Unread",
+            )
+        )
+
     # auto-raise a StormWarning alert if any segment of the route is high-risk
     if max_risk_seen >= ALERT_RISK_THRESHOLD:
         db.add(
