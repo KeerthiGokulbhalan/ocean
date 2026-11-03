@@ -15,13 +15,22 @@ class WeatherField:
 
     def at(self, lat: float, lon: float) -> dict:
         if not self.samples:
-            return {"wave_height_m": 0.0, "wind_speed_kmh": 0.0}
+            return {
+                "wave_height_m": 0.0,
+                "wind_speed_kmh": 0.0,
+                "data_available": False,
+                "retrieved_at_utc": None,
+            }
         best, best_d = None, math.inf
         for s in self.samples:
             d = (s["lat"] - lat) ** 2 + (s["lon"] - lon) ** 2
             if d < best_d:
                 best, best_d = s, d
         return best
+
+    @property
+    def data_available(self) -> bool:
+        return any(sample.get("data_available", False) for sample in self.samples)
 
     @classmethod
     async def build(cls, min_lat, max_lat, min_lon, max_lon, n_samples_per_axis=4):
