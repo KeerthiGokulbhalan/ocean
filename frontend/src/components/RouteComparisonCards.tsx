@@ -87,6 +87,7 @@ export default function RouteComparisonCards({
                 {opt.weather_data_available ? (
                   alerts.length > 0 ? (
                     <div className="space-y-1.5">
+                      <p className="text-[10px] text-slate-500">Sampled weather coverage: {opt.weather_coverage_percent.toFixed(0)}%</p>
                       <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-700">
                         <AlertTriangle className="h-4 w-4" />
                         {alerts.length} weather-affected segment{alerts.length === 1 ? "" : "s"}
@@ -101,9 +102,12 @@ export default function RouteComparisonCards({
                       )}
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1.5 text-xs text-emerald-700">
-                      <CheckCircle2 className="h-4 w-4" />
-                      No threshold-based weather alerts on this route
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5 text-xs text-emerald-700">
+                        <CheckCircle2 className="h-4 w-4" />
+                        No threshold-based alerts in sampled segments
+                      </div>
+                      <p className="text-[10px] text-slate-500">Sampled weather coverage: {opt.weather_coverage_percent.toFixed(0)}%</p>
                     </div>
                   )
                 ) : (
