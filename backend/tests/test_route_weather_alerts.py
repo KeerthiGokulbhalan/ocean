@@ -73,3 +73,43 @@ def test_weather_coverage_reports_partial_samples():
 
     assert weather.data_available is True
     assert weather.coverage_percent == 50.0
+
+
+def test_weather_segment_alert_is_saved_with_voyage(auth_client, vessel):
+    response = auth_client.post(
+        "/api/voyages",
+        json={
+            "vessel_id": vessel["id"],
+            "start_port": "Chennai Port",
+            "end_port": "Mumbai Port",
+            "origin": {"lat": 13.098, "lon": 80.293},
+            "destination": {"lat": 18.95, "lon": 72.84},
+            "strategy": "safest",
+            "distance_nm": 1200,
+            "duration_hr": 66,
+            "fuel_tons": 200,
+            "co2_tons": 622.8,
+            "route_points": [
+                {"lat": 13.098, "lon": 80.293},
+                {"lat": 18.95, "lon": 72.84},
+            ],
+            "risk_segments": [0.2, 0.8],
+            "weather_alerts": [
+                {
+                    "segment_index": 0,
+                    "start": {"lat": 13.098, "lon": 80.293},
+                    "end": {"lat": 18.95, "lon": 72.84},
+                    "midpoint": {"lat": 16.024, "lon": 76.5665},
+                    "wave_height_m": 4.2,
+                    "wind_speed_kmh": 68.0,
+                    "severity": "severe",
+                    "message": "Severe weather on route segment 1: waves 4.2 m and wind 68 km/h",
+                }
+            ],
+        },
+    )
+    assert response.status_code == 200, response.text
+    alerts = auth_client.get("/api/alerts").json()
+    weather_alerts = [alert for alert in alerts if alert["type"] == "WeatherWarning"]
+    assert len(weather_alerts) == 1
+    assert "Severe weather" in weather_alerts[0]["message"]
