@@ -80,6 +80,10 @@ async def plan_routes(req: RouteRequest) -> RouteResponse:
             risk_segments = []
             for lat, lon in latlon_path:
                 conditions = weather.at(lat, lon)
+                if not conditions.get("data_available", False):
+                    # -1 is a map-only "no sample" value, not a risk score.
+                    risk_segments.append(-1.0)
+                    continue
                 wave_risk = wave_risk_score(conditions.get("wave_height_m", 0.0))
                 wind_risk = min(1.0, (conditions.get("wind_speed_kmh") or 0.0) / 90.0)
                 risk_segments.append(round(max(wave_risk, wind_risk), 2))
@@ -91,6 +95,7 @@ async def plan_routes(req: RouteRequest) -> RouteResponse:
                     points=[RoutePoint(lat=lat, lon=lon) for lat, lon in latlon_path],
                     risk_segments=risk_segments,
                     weather_data_available=weather.data_available,
+                    weather_coverage_percent=weather.coverage_percent,
                     weather_alerts=weather_alerts,
                     distance_nm=round(distance_nm, 1),
                     duration_hr=round(time_hr, 1),
@@ -132,6 +137,8 @@ def _weather_alerts(
         mid_lat = (lat1 + lat2) / 2
         mid_lon = (lon1 + lon2) / 2
         conditions = weather.at(mid_lat, mid_lon)
+        if not conditions.get("data_available", False):
+            continue
         wave = float(conditions.get("wave_height_m") or 0.0)
         wind = float(conditions.get("wind_speed_kmh") or 0.0)
 
