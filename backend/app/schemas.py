@@ -145,6 +145,7 @@ class VoyageCreate(BaseModel):
     co2_tons: float
     route_points: list[RoutePoint]
     risk_segments: list[float] = []
+    weather_alerts: list[WeatherRouteAlert] = Field(default_factory=list)
 
 
 class VoyageOut(BaseModel):
