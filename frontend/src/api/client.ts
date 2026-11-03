@@ -14,6 +14,7 @@ import type {
   VesselOut,
   VesselPosition,
   VesselTrackResponse,
+  VoyageAnalytics,
   VoyageCreate,
   VoyageOut,
   VoyageStatus,
@@ -79,6 +80,9 @@ export const api = {
 
   getWaypoints: (voyageId: number) =>
     client.get<WaypointOut[]>(`/voyages/${voyageId}/waypoints`).then((r) => r.data),
+
+  voyageAnalytics: (voyageId: number) =>
+    client.get<VoyageAnalytics>(`/voyages/${voyageId}/analytics`).then((r) => r.data),
 
   voyageReportUrl: (id: number) => `${API_BASE}/voyages/${id}/report`,
 
