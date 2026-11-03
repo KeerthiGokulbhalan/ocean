@@ -32,6 +32,13 @@ class WeatherField:
     def data_available(self) -> bool:
         return any(sample.get("data_available", False) for sample in self.samples)
 
+    @property
+    def coverage_percent(self) -> float:
+        if not self.samples:
+            return 0.0
+        available = sum(1 for sample in self.samples if sample.get("data_available", False))
+        return round(available / len(self.samples) * 100.0, 1)
+
     @classmethod
     async def build(cls, min_lat, max_lat, min_lon, max_lon, n_samples_per_axis=4):
         """Fetch a sparse n x n grid of weather samples across the bbox, concurrently."""
