@@ -162,10 +162,11 @@ def get_voyage_analytics(
             VesselPosition.voyage_id == voyage_id,
             VesselPosition.vessel_id == voyage.vessel_id,
         )
-        .order_by(VesselPosition.timestamp.asc())
+        .order_by(VesselPosition.timestamp.desc())
         .limit(MAX_TRACK_POINTS)
         .all()
     )
+    positions.reverse()
 
     actual_available = len(positions) >= 2
     actual_distance = None
@@ -203,6 +204,11 @@ def get_voyage_analytics(
         else 18.0
     )
 
+    planned_distance = float(voyage.distance_nm or 0.0)
+    planned_duration = float(voyage.duration_hr or 0.0)
+    planned_fuel = float(voyage.fuel_tons or 0.0)
+    planned_co2 = float(voyage.co2_tons or 0.0)
+
     if actual_available:
         actual_distance = sum(
             haversine_nm(a.latitude, a.longitude, b.latitude, b.longitude)
@@ -216,7 +222,7 @@ def get_voyage_analytics(
         estimated_sailing_hours = actual_distance / cruise_speed
         actual_fuel = estimated_sailing_hours * fuel_rate
         actual_co2 = actual_fuel * CO2_PER_TON_FUEL
-        progress = min(100.0, actual_distance / max(voyage.distance_nm, 0.01) * 100.0)
+        progress = min(100.0, actual_distance / max(planned_distance, 0.01) * 100.0)
 
     return VoyageAnalytics(
         voyage_id=voyage.id,
@@ -224,18 +230,18 @@ def get_voyage_analytics(
         is_simulated=is_simulated,
         tracking_points=len(positions),
         actual_available=actual_available,
-        planned_distance_nm=round(voyage.distance_nm or 0.0, 2),
+        planned_distance_nm=round(planned_distance, 2),
         actual_distance_nm=round(actual_distance, 2) if actual_distance is not None else None,
-        distance_variance_nm=round(actual_distance - voyage.distance_nm, 2) if actual_distance is not None else None,
-        planned_duration_hr=round(voyage.duration_hr or 0.0, 2),
+        distance_variance_nm=round(actual_distance - planned_distance, 2) if actual_distance is not None else None,
+        planned_duration_hr=round(planned_duration, 2),
         actual_duration_hr=round(actual_duration, 2) if actual_duration is not None else None,
-        duration_variance_hr=round(actual_duration - voyage.duration_hr, 2) if actual_duration is not None else None,
-        planned_fuel_tons=round(voyage.fuel_tons or 0.0, 3),
+        duration_variance_hr=round(actual_duration - planned_duration, 2) if actual_duration is not None else None,
+        planned_fuel_tons=round(planned_fuel, 3),
         actual_fuel_tons=round(actual_fuel, 3) if actual_fuel is not None else None,
-        fuel_variance_tons=round(actual_fuel - voyage.fuel_tons, 3) if actual_fuel is not None else None,
-        planned_co2_tons=round(voyage.co2_tons or 0.0, 3),
+        fuel_variance_tons=round(actual_fuel - planned_fuel, 3) if actual_fuel is not None else None,
+        planned_co2_tons=round(planned_co2, 3),
         actual_co2_tons=round(actual_co2, 3) if actual_co2 is not None else None,
-        co2_variance_tons=round(actual_co2 - voyage.co2_tons, 3) if actual_co2 is not None else None,
+        co2_variance_tons=round(actual_co2 - planned_co2, 3) if actual_co2 is not None else None,
         progress_percent=round(progress, 1) if progress is not None else None,
         fuel_calculation_method="Estimated from tracked distance ÷ vessel cruise speed × configured/default fuel rate; not an onboard fuel-meter reading.",
         actual_start_time=start_time,

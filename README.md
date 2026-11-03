@@ -400,3 +400,29 @@ NumPy/Pandas, scikit-learn, httpx, global-land-mask, ReportLab, python-jose
 **Data sources:** Open-Meteo Marine Weather API (live), synthetic training
 data for the ML fuel model (swap for real logs in production).
 
+
+
+## Route comparison, weather alerts & voyage performance
+
+The Route Planner compares the existing A* strategies using their calculated
+distance, estimated duration, fuel consumption, CO₂ emissions, sustainability
+score and weather risk. The comparison cards identify the lowest calculated
+distance, duration, fuel and CO₂ among the returned options.
+
+Weather is sampled across the routing corridor using the existing Open-Meteo
+Marine and Forecast services. Each route segment is checked against advisory
+demo thresholds (waves at 2.5 m / 4.0 m and wind at 45 / 65 km/h). Affected
+segments are highlighted on the map and saved voyages retain their
+`WeatherWarning` alerts in the alerts bell. These thresholds are for project
+demonstration only and are not official maritime safety limits. Weather sample
+coverage is shown; missing samples are not described as safe conditions.
+
+Voyage History includes a **View performance** panel. It compares planned
+metrics with the persisted vessel track. Actual distance is calculated from
+successive recorded positions and elapsed tracking time from their timestamps.
+Fuel and CO₂ are explicitly model estimates using the vessel's configured or
+default hourly fuel rate and the configured CO₂ factor; they are not onboard
+fuel-meter readings. The panel identifies whether the positions are simulated,
+AIS, manual or mixed. With fewer than two persisted points, actual metrics are
+shown as unavailable rather than invented. In the default mock-provider setup,
+the tracking source is clearly labelled **SIMULATED**.

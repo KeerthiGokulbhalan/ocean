@@ -179,5 +179,9 @@ def _average_wave(latlon_path, weather: WeatherField) -> float:
     if not latlon_path:
         return 0.0
     sample = latlon_path[:: max(1, len(latlon_path) // 20)]
-    heights = [weather.at(lat, lon).get("wave_height_m", 0.0) for lat, lon in sample]
+    heights = [
+        weather.at(lat, lon).get("wave_height_m", 0.0)
+        for lat, lon in sample
+        if weather.at(lat, lon).get("data_available", False)
+    ]
     return sum(heights) / len(heights) if heights else 0.0

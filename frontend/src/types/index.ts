@@ -182,6 +182,10 @@ export interface WeatherPoint {
   ocean_current_direction_deg?: number | null;
   wind_speed_kmh: number;
   wind_direction_deg?: number | null;
+  data_available?: boolean;
+  marine_data_available?: boolean;
+  wind_data_available?: boolean;
+  retrieved_at_utc?: string | null;
 }
 
 export interface AlertOut {
