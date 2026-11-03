@@ -228,6 +228,10 @@ class WeatherPoint(BaseModel):
     ocean_current_direction_deg: Optional[float] = None
     wind_speed_kmh: float
     wind_direction_deg: Optional[float] = None
+    data_available: bool = False
+    marine_data_available: bool = False
+    wind_data_available: bool = False
+    retrieved_at_utc: Optional[str] = None
 
 
 # --- Alerts ---------------------------------------------------------------
