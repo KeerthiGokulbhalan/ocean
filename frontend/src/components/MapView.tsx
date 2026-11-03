@@ -65,6 +65,7 @@ const STRATEGY_COLORS: Record<string, string> = {
 
 // risk 0 -> green, 0.5 -> amber, 1 -> red — used by the risk-radar overlay
 function riskColor(risk: number): string {
+  if (risk < 0) return "#94A3B8";
   if (risk >= 0.66) return "#DC2626";
   if (risk >= 0.33) return "#F2A65A";
   return "#16A34A";
