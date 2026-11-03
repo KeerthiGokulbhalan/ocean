@@ -65,6 +65,7 @@ export interface RouteOption {
   points: RoutePoint[];
   risk_segments: number[];
   weather_data_available: boolean;
+  weather_coverage_percent: number;
   weather_alerts: WeatherRouteAlert[];
   distance_nm: number;
   duration_hr: number;
