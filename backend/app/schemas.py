@@ -90,6 +90,7 @@ class RouteOption(BaseModel):
     # risk-radar heatmap overlay on the frontend map
     risk_segments: list[float]
     weather_data_available: bool = False
+    weather_coverage_percent: float = 0.0
     weather_alerts: list[WeatherRouteAlert] = Field(default_factory=list)
     distance_nm: float
     duration_hr: float
@@ -145,6 +146,7 @@ class VoyageCreate(BaseModel):
     co2_tons: float
     route_points: list[RoutePoint]
     risk_segments: list[float] = []
+    weather_alerts: list[WeatherRouteAlert] = Field(default_factory=list)
 
 
 class VoyageOut(BaseModel):

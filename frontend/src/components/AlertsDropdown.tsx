@@ -62,15 +62,15 @@ export default function AlertsDropdown() {
                   <div className="mb-1 flex items-center justify-between">
                     <span
                       className={`flex items-center gap-1 font-semibold ${
-                        a.type === "StormWarning" ? "text-red-600" : "text-deepblue"
+                        a.type === "StormWarning" ? "text-red-600" : a.type === "WeatherWarning" ? "text-amber-700" : "text-deepblue"
                       }`}
                     >
-                      {a.type === "StormWarning" ? (
+                      {a.type === "StormWarning" || a.type === "WeatherWarning" ? (
                         <TriangleAlert className="h-3.5 w-3.5" aria-hidden="true" />
                       ) : (
                         <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
                       )}
-                      {a.type === "StormWarning" ? "Storm Warning" : "Route Change"}
+                      {a.type === "StormWarning" ? "Storm Warning" : a.type === "WeatherWarning" ? "Route Weather Warning" : "Route Change"}
                     </span>
                     {a.status === "Unread" && (
                       <button

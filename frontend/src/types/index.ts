@@ -6,7 +6,7 @@ export type VesselType =
   | "fishing";
 export type RouteStrategy = "fastest" | "efficient" | "safest";
 export type VoyageStatus = "Planned" | "In-Progress" | "Completed";
-export type AlertType = "StormWarning" | "RouteChange";
+export type AlertType = "StormWarning" | "RouteChange" | "WeatherWarning";
 export type AlertStatus = "Read" | "Unread";
 export type UserRole = "Operator" | "Admin";
 
@@ -49,10 +49,24 @@ export interface RoutePoint {
   lon: number;
 }
 
+export interface WeatherRouteAlert {
+  segment_index: number;
+  start: Coordinate;
+  end: Coordinate;
+  midpoint: Coordinate;
+  wave_height_m: number;
+  wind_speed_kmh: number;
+  severity: "warning" | "severe";
+  message: string;
+}
+
 export interface RouteOption {
   strategy: RouteStrategy;
   points: RoutePoint[];
   risk_segments: number[];
+  weather_data_available: boolean;
+  weather_coverage_percent: number;
+  weather_alerts: WeatherRouteAlert[];
   distance_nm: number;
   duration_hr: number;
   fuel_tons: number;
@@ -117,6 +131,32 @@ export interface VoyageCreate {
   co2_tons: number;
   route_points: RoutePoint[];
   risk_segments?: number[];
+  weather_alerts?: WeatherRouteAlert[];
+}
+
+export interface VoyageAnalytics {
+  voyage_id: number;
+  data_source: string;
+  is_simulated: boolean;
+  tracking_points: number;
+  actual_available: boolean;
+  planned_distance_nm: number;
+  actual_distance_nm?: number | null;
+  distance_variance_nm?: number | null;
+  planned_duration_hr: number;
+  actual_duration_hr?: number | null;
+  duration_variance_hr?: number | null;
+  planned_fuel_tons: number;
+  actual_fuel_tons?: number | null;
+  fuel_variance_tons?: number | null;
+  planned_co2_tons: number;
+  actual_co2_tons?: number | null;
+  co2_variance_tons?: number | null;
+  progress_percent?: number | null;
+  fuel_calculation_method: string;
+  actual_start_time?: string | null;
+  actual_end_time?: string | null;
+  note: string;
 }
 
 export interface WaypointOut {
