@@ -12,6 +12,7 @@ and return calm-weather defaults so routing and the UI never break because
 of a flaky external API.
 """
 import asyncio
+from datetime import datetime, timezone
 
 import httpx
 
@@ -100,6 +101,8 @@ async def fetch_marine_point(lat: float, lon: float) -> dict:
     Always returns every key in DEFAULT_WEATHER; fields the API didn't
     have data for come back as None (visualised as "—" in the UI)."""
     result = dict(DEFAULT_WEATHER)
+    marine_available = False
+    wind_available = False
     try:
         async with httpx.AsyncClient(timeout=4.0) as client:
             marine_task = _fetch_marine(client, lat, lon)
@@ -109,10 +112,18 @@ async def fetch_marine_point(lat: float, lon: float) -> dict:
             )
         if isinstance(marine, dict):
             result.update(marine)
+            marine_available = True
         if isinstance(wind, dict):
             result.update(wind)
+            wind_available = True
     except Exception:
-        # both requests failed outright (offline, DNS, etc.) — degrade
-        # gracefully rather than failing the route/weather request
+        # Weather is supplementary: never fail route planning because the
+        # provider is offline. The explicit availability flag prevents these
+        # calm defaults from being presented as a real forecast.
         pass
+
+    result["data_available"] = marine_available or wind_available
+    result["marine_data_available"] = marine_available
+    result["wind_data_available"] = wind_available
+    result["retrieved_at_utc"] = datetime.now(timezone.utc).isoformat()
     return result
