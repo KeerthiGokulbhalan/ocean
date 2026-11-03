@@ -228,7 +228,9 @@ export default function History() {
               )}
             </>
           )}
-          <p className="text-[11px] leading-5 text-slate-500">{analytics.fuel_calculation_method} {analytics.note}</p>
+          {analytics.actual_available && (
+            <p className="text-[11px] leading-5 text-slate-500">{analytics.fuel_calculation_method} {analytics.note}</p>
+          )}
         </section>
       )}
     </div>
