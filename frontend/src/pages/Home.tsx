@@ -210,6 +210,7 @@ export default function Home() {
         co2_tons: opt.co2_tons,
         route_points: opt.points,
         risk_segments: opt.risk_segments,
+        weather_alerts: opt.weather_alerts,
       });
 
       resetTracking();
@@ -356,6 +357,7 @@ export default function Home() {
             options={lastRoute?.options ?? []}
             activeStrategy={selectedStrategy}
             showRiskRadar={showRiskRadar}
+            weatherAlerts={activeOption?.weather_alerts ?? []}
             vesselId={activeVesselId}
             vesselName={activeVesselName}
             vesselPosition={currentVesselPosition}
