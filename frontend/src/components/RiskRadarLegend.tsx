@@ -11,6 +11,9 @@ export default function RiskRadarLegend() {
       <span className="flex items-center gap-1">
         <span className="h-2.5 w-2.5 rounded-full bg-[#DC2626]" /> High
       </span>
+      <span className="flex items-center gap-1">
+        <span className="h-2.5 w-2.5 rounded-full bg-[#94A3B8]" /> No data
+      </span>
     </div>
   );
 }
