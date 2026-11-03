@@ -5,10 +5,11 @@ from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
-from app.config import ALERT_RISK_THRESHOLD
-from app.db.models import Alert, User, Voyage, Waypoint
+from app.config import ALERT_RISK_THRESHOLD, CO2_PER_TON_FUEL, DEFAULT_FUEL_RATE_TON_PER_HR, MAX_TRACK_POINTS
+from app.db.models import Alert, User, VesselPosition, Voyage, Waypoint
 from app.db.session import get_db
-from app.schemas import VoyageCreate, VoyageOut, VoyageStatusUpdate, WaypointOut
+from app.routing.geo import haversine_nm
+from app.schemas import VoyageAnalytics, VoyageCreate, VoyageOut, VoyageStatusUpdate, WaypointOut
 from app.services.report import build_voyage_report_pdf
 from app.services.spatial import find_voyages_near
 
@@ -122,6 +123,115 @@ def update_voyage_status(
     db.commit()
     db.refresh(voyage)
     return voyage
+
+
+@router.get("/{voyage_id}/analytics", response_model=VoyageAnalytics)
+def get_voyage_analytics(
+    voyage_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Compare planned metrics with the persisted vessel track.
+
+    Fuel is a transparent estimate from the vessel's configured/default
+    hourly burn rate. It is not claimed to be a reading from an onboard meter.
+    """
+    voyage = db.query(Voyage).get(voyage_id)
+    if not voyage or voyage.created_by != current_user.id:
+        raise HTTPException(status_code=404, detail="Voyage not found")
+
+    positions = (
+        db.query(VesselPosition)
+        .filter(
+            VesselPosition.voyage_id == voyage_id,
+            VesselPosition.vessel_id == voyage.vessel_id,
+        )
+        .order_by(VesselPosition.timestamp.asc())
+        .limit(MAX_TRACK_POINTS)
+        .all()
+    )
+
+    actual_available = len(positions) >= 2
+    actual_distance = None
+    actual_duration = None
+    actual_fuel = None
+    actual_co2 = None
+    progress = None
+    start_time = positions[0].timestamp if positions else None
+    end_time = positions[-1].timestamp if positions else None
+
+    sources = {p.source for p in positions if p.source}
+    is_simulated = bool("simulated" in sources)
+    if not sources:
+        source_label = "NO TRACK DATA"
+    elif len(sources) > 1:
+        source_label = "MIXED TRACK"
+    elif "simulated" in sources:
+        source_label = "SIMULATED"
+    elif "ais" in sources:
+        source_label = "AIS"
+    else:
+        source_label = next(iter(sources)).upper()
+
+    fuel_rate = (
+        voyage.vessel.fuel_rate_ton_per_hr
+        if voyage.vessel and voyage.vessel.fuel_rate_ton_per_hr
+        else DEFAULT_FUEL_RATE_TON_PER_HR.get(
+            voyage.vessel.vessel_type if voyage.vessel else "container",
+            DEFAULT_FUEL_RATE_TON_PER_HR["container"],
+        )
+    )
+    cruise_speed = (
+        voyage.vessel.cruise_speed_knots
+        if voyage.vessel and voyage.vessel.cruise_speed_knots
+        else 18.0
+    )
+
+    if actual_available:
+        actual_distance = sum(
+            haversine_nm(a.latitude, a.longitude, b.latitude, b.longitude)
+            for a, b in zip(positions, positions[1:])
+        )
+        actual_duration = max(
+            0.0, (positions[-1].timestamp - positions[0].timestamp).total_seconds() / 3600.0
+        )
+        # Estimate sailing fuel from sailed distance and the vessel's hourly
+        # burn rate at its configured cruise speed; do not imply a fuel sensor.
+        estimated_sailing_hours = actual_distance / cruise_speed
+        actual_fuel = estimated_sailing_hours * fuel_rate
+        actual_co2 = actual_fuel * CO2_PER_TON_FUEL
+        progress = min(100.0, actual_distance / max(voyage.distance_nm, 0.01) * 100.0)
+
+    return VoyageAnalytics(
+        voyage_id=voyage.id,
+        data_source=source_label,
+        is_simulated=is_simulated,
+        tracking_points=len(positions),
+        actual_available=actual_available,
+        planned_distance_nm=round(voyage.distance_nm or 0.0, 2),
+        actual_distance_nm=round(actual_distance, 2) if actual_distance is not None else None,
+        distance_variance_nm=round(actual_distance - voyage.distance_nm, 2) if actual_distance is not None else None,
+        planned_duration_hr=round(voyage.duration_hr or 0.0, 2),
+        actual_duration_hr=round(actual_duration, 2) if actual_duration is not None else None,
+        duration_variance_hr=round(actual_duration - voyage.duration_hr, 2) if actual_duration is not None else None,
+        planned_fuel_tons=round(voyage.fuel_tons or 0.0, 3),
+        actual_fuel_tons=round(actual_fuel, 3) if actual_fuel is not None else None,
+        fuel_variance_tons=round(actual_fuel - voyage.fuel_tons, 3) if actual_fuel is not None else None,
+        planned_co2_tons=round(voyage.co2_tons or 0.0, 3),
+        actual_co2_tons=round(actual_co2, 3) if actual_co2 is not None else None,
+        co2_variance_tons=round(actual_co2 - voyage.co2_tons, 3) if actual_co2 is not None else None,
+        progress_percent=round(progress, 1) if progress is not None else None,
+        fuel_calculation_method="Estimated from tracked distance ÷ vessel cruise speed × configured/default fuel rate; not an onboard fuel-meter reading.",
+        actual_start_time=start_time,
+        actual_end_time=end_time,
+        note=(
+            "Tracking positions are simulated. Fuel and CO₂ are model estimates."
+            if is_simulated
+            else "Fuel and CO₂ are model estimates from track distance and vessel fuel rate, not onboard sensor readings."
+            if actual_available
+            else "Not enough persisted tracking points yet. Start tracking and allow at least two positions to be recorded."
+        ),
+    )
 
 
 @router.get("/{voyage_id}/waypoints", response_model=list[WaypointOut])
