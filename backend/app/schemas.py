@@ -71,12 +71,26 @@ class RoutePoint(BaseModel):
     lon: float
 
 
+class WeatherRouteAlert(BaseModel):
+    """Weather warning tied to one consecutive pair of route points."""
+    segment_index: int
+    start: Coordinate
+    end: Coordinate
+    midpoint: Coordinate
+    wave_height_m: float
+    wind_speed_kmh: float
+    severity: Literal["warning", "severe"]
+    message: str
+
+
 class RouteOption(BaseModel):
     strategy: RouteStrategy
     points: list[RoutePoint]
     # per-point risk score (0-1), same length/order as `points` — powers the
     # risk-radar heatmap overlay on the frontend map
     risk_segments: list[float]
+    weather_data_available: bool = False
+    weather_alerts: list[WeatherRouteAlert] = Field(default_factory=list)
     distance_nm: float
     duration_hr: float
     fuel_tons: float
@@ -153,6 +167,31 @@ class VoyageOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class VoyageAnalytics(BaseModel):
+    voyage_id: int
+    data_source: str
+    is_simulated: bool
+    tracking_points: int
+    actual_available: bool
+    planned_distance_nm: float
+    actual_distance_nm: Optional[float] = None
+    distance_variance_nm: Optional[float] = None
+    planned_duration_hr: float
+    actual_duration_hr: Optional[float] = None
+    duration_variance_hr: Optional[float] = None
+    planned_fuel_tons: float
+    actual_fuel_tons: Optional[float] = None
+    fuel_variance_tons: Optional[float] = None
+    planned_co2_tons: float
+    actual_co2_tons: Optional[float] = None
+    co2_variance_tons: Optional[float] = None
+    progress_percent: Optional[float] = None
+    fuel_calculation_method: str
+    actual_start_time: Optional[datetime] = None
+    actual_end_time: Optional[datetime] = None
+    note: str
 
 
 class VoyageStatusUpdate(BaseModel):
