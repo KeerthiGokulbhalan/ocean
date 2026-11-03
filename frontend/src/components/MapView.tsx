@@ -16,6 +16,7 @@ import type {
   RouteOption,
   TrackPoint,
   VesselPosition,
+  WeatherRouteAlert,
 } from "../types";
 
 // Leaflet's default marker icons reference image files that Vite doesn't
@@ -75,6 +76,7 @@ interface MapViewProps {
   options: RouteOption[];
   activeStrategy: string;
   showRiskRadar?: boolean;
+  weatherAlerts?: WeatherRouteAlert[];
   vesselId?: number | null;
   vesselName?: string;
   vesselPosition?: VesselPosition | null;
@@ -143,6 +145,7 @@ export default function MapView({
   options,
   activeStrategy,
   showRiskRadar = false,
+  weatherAlerts = [],
   vesselId: _vesselId,
   vesselName = "Vessel",
   vesselPosition = null,
@@ -234,6 +237,38 @@ export default function MapView({
             />
           );
         })}
+
+      {/* Weather-affected route segments. These are provider-derived alerts,
+          not official navigation restrictions. */}
+      {weatherAlerts.map((alert) => (
+        <Polyline
+          key={`weather-${alert.segment_index}`}
+          positions={[
+            [alert.start.lat, alert.start.lon],
+            [alert.end.lat, alert.end.lon],
+          ]}
+          pathOptions={{
+            color: alert.severity === "severe" ? "#B91C1C" : "#D97706",
+            weight: 9,
+            opacity: 0.95,
+          }}
+        >
+          <Popup>
+            <div className="max-w-64 text-xs">
+              <div className="font-bold text-ink">
+                {alert.severity === "severe" ? "Severe weather segment" : "Weather warning"}
+              </div>
+              <p className="mt-1 text-slate-600">{alert.message}</p>
+              <p className="mt-1 text-slate-500">
+                Wave: {alert.wave_height_m.toFixed(1)} m · Wind: {alert.wind_speed_kmh.toFixed(0)} km/h
+              </p>
+              <p className="mt-1 text-[10px] text-slate-400">
+                Weather alert thresholds are advisory demo thresholds, not official maritime warnings.
+              </p>
+            </div>
+          </Popup>
+        </Polyline>
+      ))}
 
       {/* Remaining route */}
       {remainingRoute && (
